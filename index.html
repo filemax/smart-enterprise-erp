@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#12304a">
+    <meta name="description" content="Smart Enterprise ERP - sales, stock, credit, expenses and reporting dashboard">
+    <title>Smart Enterprise ERP v3.0</title>
+    <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="css/components.css">
+    <link rel="stylesheet" href="css/dashboard.css">
+</head>
+<body>
+
+    <!-- 7. Modern Aesthetic Login / Sign-in Card -->
+    <div id="login-container" class="card fade-in modern-login-card">
+        <h2>🔒 Smart ERP පිවිසුම</h2>
+        <p style="color: #666; margin-bottom: 15px; font-size: 0.85rem;">පද්ධතියට ඇතුළු වීමට ඔබගේ ගිණුම් විස්තර ඇතුළත් කරන්න.</p>
+        
+        <form id="login-form">
+            <div class="form-group">
+                <label for="username">පරිශීලක නාමය (Username / Email):</label>
+                <input type="text" id="username" placeholder="admin@erp.com" required>
+            </div>
+            <div class="form-group">
+                <label for="password">මුරපදය (Password):</label>
+                <input type="password" id="password" placeholder="••••••••" required>
+            </div>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; font-size:0.8rem;">
+                <label style="display:flex; align-items:center; gap:4px; cursor:pointer;">
+                    <input type="checkbox" id="remember-me" style="width:auto;"> මතක තබාගන්න (Remember me)
+                </label>
+                <a href="#" onclick="alert('කරුණාකර ප්‍රධාන පරිපාලක (Admin) අමතන්න.'); return false;" style="color:var(--primary-color); text-decoration:none; font-weight:bold;">Forgot Password?</a>
+            </div>
+            <button type="submit" class="btn btn-success" style="margin-top: 5px;">Login (ඇතුළු වන්න)</button>
+            <p id="login-error" class="error-msg"></p>
+        </form>
+
+        <div style="margin: 15px 0; text-align:center; position:relative;">
+            <hr style="border-top:1px solid #ddd;">
+            <span style="position:absolute; top:-10px; background:white; padding:0 8px; left:50%; transform:translateX(-50%); font-size:0.75rem; color:#888;">හෝ</span>
+        </div>
+
+        <!-- Google / Gmail Sign in & Sign up -->
+        <button type="button" class="btn" onclick="socialAuth('Google')" style="background:#fff; border:1px solid #ccc; color:#444; width:100%; display:flex; align-items:center; justify-content:center; gap:8px; margin-bottom:8px;">
+            <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="16" height="16" alt="Google"> Sign in with Google / Gmail
+        </button>
+
+        <div style="text-align:center; font-size:0.8rem; margin-top:10px;">
+            ගිණුමක් නොමැතිද? <a href="#" onclick="alert('නව ගිණුමක් ලියාපදිංචි කිරීම සඳහා කරුණාකර Admin අමතන්න.'); return false;" style="color:var(--primary-color); font-weight:bold; text-decoration:none;">Sign Up</a>
+        </div>
+    </div>
+
+    <div id="app-container" class="hidden">
+        
+        <!-- Header -->
+        <header class="app-header">
+            <h1>Smart Enterprise ERP v3.0</h1>
+            <div class="header-right-tools">
+                <span id="live-clock" class="header-clock"></span>
+                <span class="header-icon" title="Notifications">🔔</span>
+                <div class="profile-dropdown">
+                    <button class="profile-btn" onclick="toggleProfileMenu()">👤 Profile ▾</button>
+                    <div id="profile-menu" class="profile-menu-content hidden">
+                        <button onclick="toggleDarkMode()">🌓 Dark/Light Mode</button>
+                        <button onclick="backupData()">💾 Backup</button>
+                        <button onclick="triggerRestoreData()">♻️ Restore</button>
+                        <input type="file" id="restore-file-input" accept=".json,application/json" class="hidden" onchange="restoreDataFromFile(this)">
+                        <button onclick="switchTab('tab-settings')">⚙️ Settings</button>
+                        <button id="logout-btn" style="color:red;">🚪 Logout</button>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Tabs Navigation -->
+        <div class="tabs-nav">
+            <button class="tab-btn active" onclick="switchTab('tab-analytics')">📈 වාර්තා & Insights</button>
+            <button class="tab-btn" onclick="switchTab('tab-entry')">📝 ඇතුළත් කිරීම</button>
+            <button class="tab-btn" onclick="switchTab('tab-credit')">💳 ණය පොත</button>
+            <button class="tab-btn" onclick="switchTab('tab-stock-expense')">📦 තොග & වියදම්</button>
+            <button class="tab-btn" onclick="switchTab('tab-returns')">🔄 Return & Damage</button>
+            <button class="tab-btn" onclick="switchTab('tab-orders')">📋 New Orders</button>
+            <button class="tab-btn" onclick="switchTab('tab-pnl')">📅 මාසික P&L</button>
+            <button class="tab-btn" onclick="switchTab('tab-settings')">⚙️ සැකසුම්</button>
+        </div>
+
+        <!-- TAB 1: Analytics -->
+        <div id="tab-analytics" class="tab-content active-content">
+            <div class="card" style="border-left: 5px solid #2e7d32; background: #e8f5e9;">
+                <h3 style="color:#2e7d32;">✨ සුබ පැතුම්! අද ඔබගේ සියළුම වැඩකටයුතු සාර්ථක වේවා..</h3>
+                <div id="analytics-upcoming-orders" style="margin-top: 8px;"></div>
+            </div>
+
+            <!-- 6. කඩවල් සහ ලාභ විශ්ලේෂණය -->
+            <div class="card filter-dashboard">
+                <h3>🏪 කඩවල් සහ ලාභ විශ්ලේෂණය</h3>
+                <div class="filter-controls-four">
+                    <div class="form-group">
+                        <label>කඩය තෝරන්න:</label>
+                        <select id="filter-shop-select"></select>
+                    </div>
+                    <div class="form-group">
+                        <label>භාණ්ඩය තෝරන්න:</label>
+                        <select id="filter-product-select"></select>
+                    </div>
+                    <div class="form-group">
+                        <label>කාල සීමාව:</label>
+                        <select id="filter-time-select">
+                            <option value="daily">අද දින (Daily)</option>
+                            <option value="weekly">මේ සතියේ (Weekly)</option>
+                            <option value="monthly">මේ මාසයේ (Monthly)</option>
+                            <option value="yearly">මේ වසරේ (Yearly)</option>
+                            <option value="all">සියලු කාලය (All Time)</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="summary-grid">
+                    <div class="summary-box filter-sales">
+                        <h4>විකිණී ඇති ප්‍රමාණය</h4>
+                        <p id="f-sold-qty">0</p>
+                    </div>
+                    <div class="summary-box filter-income">
+                        <h4>ලබාගත් මුළු ආදායම</h4>
+                        <p id="f-total-income">රු. 0.00</p>
+                    </div>
+                    <div class="summary-box filter-return">
+                        <h4>Return ප්‍රමාණය & අලාභය</h4>
+                        <p id="f-return-qty">0</p>
+                        <small id="f-return-loss">අලාභය: රු. 0.00</small>
+                    </div>
+                    <div class="summary-box filter-outstanding">
+                        <h4>ලැබීමට ඇති මුළු ණය</h4>
+                        <p id="f-total-outstanding">රු. 0.00</p>
+                    </div>
+                </div>
+                
+                <div class="summary-grid" style="margin-top: 15px;">
+                    <div class="summary-box filter-profit" style="grid-column: span 2;">
+                        <h4>පිරිසිදු ශුද්ධ ලාභය (Net Profit)</h4>
+                        <p id="f-net-profit">රු. 0.00</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Expiry Alerts Card -->
+            <div class="card" style="border-left: 5px solid #d32f2f;">
+                <h3>⚠️ Expiry Alerts</h3>
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr><th>Batch No.</th><th>භාණ්ඩය</th><th>දිනය (Date)</th><th>Reminder Days</th></tr>
+                        </thead>
+                        <tbody id="expiry-alerts-body"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 2: Sales Entry (5. දිනය, දකුණු පැත්තෙන් කඩය පමණි) -->
+        <div id="tab-entry" class="tab-content">
+            <div class="card">
+                <h3>📝 අලෙවිය සහ රිටන් ඇතුළත් කිරීම</h3>
+                <form id="sales-form">
+                    <input type="hidden" id="edit-sale-id">
+                    <div class="form-group-row">
+                        <div class="form-group" style="flex:1;">
+                            <label for="sales-date">දිනය (Date):</label>
+                            <input type="date" id="sales-date" required>
+                        </div>
+                        <div class="form-group" style="flex:1;">
+                            <label for="shop-select">කඩය (Shop Name):</label>
+                            <select id="shop-select" required></select>
+                        </div>
+                    </div>
+                    <input type="hidden" id="sales-batch-no" value="">
+                    <div class="form-group">
+                        <label>සටහන (Note):</label>
+                        <input type="text" id="sales-note" placeholder="Note">
+                    </div>
+
+                    <!-- Dynamic Sales Items Rows Container -->
+                    <div id="sales-items-container"></div>
+
+                    <button type="button" class="btn btn-secondary" onclick="addSalesItemRow()" style="margin-bottom: 12px;">➕ තව Item එකක් එකතු කරන්න</button>
+
+                    <div class="form-group">
+                        <label>ගනුදෙනු වර්ගය:</label>
+                        <div class="radio-group">
+                            <label class="radio-label"><input type="radio" name="payment-method" value="Cash" checked> මුදල් (Cash)</label>
+                            <label class="radio-label"><input type="radio" name="payment-method" value="Credit"> ණය (Credit)</label>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>ශුද්ධ මුළු මුදල (Net Total):</label>
+                        <div id="total-price-display" class="total-highlight">රු. 0.00</div>
+                    </div>
+                    <button type="submit" id="sales-submit-btn" class="btn btn-success">දත්ත ඇතුළත් කර බිල සාදන්න</button>
+                    <button type="button" id="sales-cancel-btn" class="btn btn-danger hidden" onclick="resetSalesForm()" style="margin-top:5px;">අවලංගු කරන්න</button>
+                </form>
+
+                <!-- 5. Bill Preview with WhatsApp, SMS, PDF, Print -->
+                <div id="bill-preview-wrapper" class="hidden" style="margin-top: 20px;">
+                    <div style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:10px;">
+                        <button id="send-wa-btn" class="btn btn-secondary" style="background:#25D366; color:white; flex:1;" onclick="shareBillWA()">💬 WhatsApp</button>
+                        <button id="send-sms-btn" class="btn btn-secondary" style="background:#0288d1; color:white; flex:1;" onclick="shareBillSMS()">📱 SMS</button>
+                        <button id="pdf-btn" class="btn btn-secondary" style="background:#d32f2f; color:white; flex:1;" onclick="downloadBillPDF()">📄 PDF Download</button>
+                        <button id="print-btn" class="btn btn-secondary" style="background:#555; color:white; flex:1;" onclick="printBillDirect()">🖨️ Print</button>
+                    </div>
+                    <div id="printable-bill" class="bill-invoice-container"></div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>📜 විකුණුම් ඉතිහාසය</h3>
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr><th>දිනය</th><th>වේලාව</th><th>කඩය</th><th>භාණ්ඩ විස්තරය</th><th>Return</th><th>Free</th><th>මුළු මුදල</th><th>ක්‍රියා</th></tr>
+                        </thead>
+                        <tbody id="sales-table-body"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 3: Credit Book -->
+        <div id="tab-credit" class="tab-content">
+            <div class="summary-grid" style="margin-bottom:15px;">
+                <div class="summary-box filter-outstanding">
+                    <h4>මුළු ලැබීමට ඇති ණය ප්‍රමාණය</h4>
+                    <p id="credit-total-pending">රු. 0.00</p>
+                </div>
+                <div class="summary-box filter-sales">
+                    <h4>ණය ගෙවීමට ඇති කඩ ප්‍රමාණය</h4>
+                    <p id="credit-shop-count">0</p>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>💳 ණය පියවීම සහ කළමනාකරණය</h3>
+                <form id="credit-payment-form" style="margin-bottom:15px; background:#fff8e1; padding:10px; border-radius:6px;">
+                    <div class="form-group-row">
+                        <div class="form-group" style="flex:1;">
+                            <label>දිනය:</label>
+                            <input type="date" id="credit-pay-date" required>
+                        </div>
+                        <div class="form-group" style="flex:1;">
+                            <label>ණය තිබෙන කඩය:</label>
+                            <select id="credit-shop-select" required></select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>පියවූ මුදල (රු.):</label>
+                        <input type="number" id="credit-pay-amount" step="0.01" min="0.01" placeholder="0.00" required>
+                    </div>
+                    <button type="submit" class="btn btn-success">ණය පියවීම සටහන් කරන්න</button>
+                </form>
+
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr><th>ණය වූ දිනය</th><th>කඩය</th><th>මුල් ණය මුදල</th><th>ගෙවූ දිනය</th><th>ගෙවූ ප්‍රමාණය</th><th>ඉතිරි ණය ශේෂය</th></tr>
+                        </thead>
+                        <tbody id="credit-table-body"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 4: Stock & Expenses -->
+        <div id="tab-stock-expense" class="tab-content">
+            <div class="grid-container">
+                <div class="card">
+                    <h3 id="stock-form-title">📦 නිෂ්පාදන තොග ඇතුළත් කිරීම</h3>
+                    <form id="stock-form">
+                        <input type="hidden" id="edit-stock-id">
+                        <div class="form-group-row">
+                            <div class="form-group" style="flex:1;">
+                                <label>දිනය:</label>
+                                <input type="date" id="stock-date" required>
+                            </div>
+                            <div class="form-group" style="flex:1;">
+                                <label>Batch No:</label>
+                                <input type="text" id="stock-batch-no" placeholder="Batch No" required>
+                            </div>
+                        </div>
+                        <div class="form-group-row">
+                            <div class="form-group" style="flex:1;">
+                                <label>භාණ්ඩය:</label>
+                                <select id="stock-item-select" onchange="onStockItemSelectChange()" required></select>
+                            </div>
+                            <div class="form-group" style="flex:1;">
+                                <label>Exp. Date:</label>
+                                <input type="date" id="stock-exp-date" required>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>එකතු කළ Qty (S / M / L):</label>
+                            <div class="form-group-row">
+                                <input type="number" id="stock-qty-s" min="0" value="0" placeholder="S" required>
+                                <input type="number" id="stock-qty-m" min="0" value="0" placeholder="M" required>
+                                <input type="number" id="stock-qty-l" min="0" value="0" placeholder="L" required>
+                            </div>
+                        </div>
+                        <div class="form-group-row">
+                            <div class="form-group" style="flex:1;">
+                                <label>නිෂ්පාදන වියදම (රු.):</label>
+                                <input type="number" id="stock-cost" step="0.01" value="0">
+                            </div>
+                            <div class="form-group" style="flex:1;">
+                                <label>Damage Qty (S / M / L):</label>
+                                <div class="form-group-row">
+                                    <input type="number" id="stock-dmg-s" min="0" value="0" placeholder="S">
+                                    <input type="number" id="stock-dmg-m" min="0" value="0" placeholder="M">
+                                    <input type="number" id="stock-dmg-l" min="0" value="0" placeholder="L">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Sample තියාගත් ප්‍රමාණය (S / M / L):</label>
+                            <div class="form-group-row">
+                                <input type="number" id="stock-sample-s" min="0" value="0" placeholder="S">
+                                <input type="number" id="stock-sample-m" min="0" value="0" placeholder="M">
+                                <input type="number" id="stock-sample-l" min="0" value="0" placeholder="L">
+                            </div>
+                        </div>
+                        <button type="submit" id="stock-submit-btn" class="btn btn-success">තොගය එකතු කරන්න</button>
+                        <button type="button" id="stock-cancel-btn" class="btn btn-danger hidden" onclick="resetStockForm()" style="margin-top:5px;">අවලංගු කරන්න</button>
+                    </form>
+                    
+                    <h4 style="margin-top:15px;">📊 වත්මන් තොග ශේෂය</h4>
+                    <div class="table-responsive">
+                        <table>
+                            <thead>
+                                <tr><th>භාණ්ඩය</th><th>S</th><th>M</th><th>L</th></tr>
+                            </thead>
+                            <tbody id="stock-overview-body"></tbody>
+                        </table>
+                    </div>
+
+                    <h4 style="margin-top:10px;">📜 තොග එකතු කිරීමේ ඉතිහාසය</h4>
+                    <div class="table-responsive">
+                        <table>
+                            <thead>
+                                <tr><th>දිනය</th><th>Batch</th><th>භාණ්ඩය</th><th>Exp. Date</th><th>එකතු කළ Qty / Damage Qty</th><th>ක්‍රියා</th></tr>
+                            </thead>
+                            <tbody id="stock-history-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3 id="expense-form-title">💸 වියදම් සටහන</h3>
+                    <form id="expense-form">
+                        <input type="hidden" id="edit-expense-id">
+                        <div class="form-group">
+                            <label>දිනය:</label>
+                            <input type="date" id="expense-date" required>
+                        </div>
+                        <div class="form-group">
+                            <label>විස්තරය:</label>
+                            <input type="text" id="expense-desc" placeholder="උදා: ප්‍රවාහන" required>
+                        </div>
+                        <div class="form-group">
+                            <label>වටිනාකම (රු.):</label>
+                            <input type="number" id="expense-amount" step="0.01" min="0.01" placeholder="0.00" required>
+                        </div>
+                        <button type="submit" id="expense-submit-btn" class="btn btn-success">වියදම සටහන් කරන්න</button>
+                        <button type="button" id="expense-cancel-btn" class="btn btn-danger hidden" onclick="resetExpenseForm()" style="margin-top:5px;">අවලංගු කරන්න</button>
+                    </form>
+                    <div class="table-responsive" style="margin-top:15px;">
+                        <table>
+                            <thead>
+                                <tr><th>දිනය</th><th>විස්තරය</th><th>වටිනාකම</th><th>ක්‍රියා</th></tr>
+                            </thead>
+                            <tbody id="expense-table-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB: Return & Damage (3. Edit පහසුකම සහිතව) -->
+        <div id="tab-returns" class="tab-content">
+            <div class="card">
+                <h3 id="ret-form-title">🔄 Return & Damage සටහන් කිරීම</h3>
+                <div class="summary-grid" style="margin-bottom:15px;">
+                    <div class="summary-box filter-return">
+                        <h4>මුළු Return ප්‍රමාණය</h4>
+                        <p id="ret-dash-returns">0</p>
+                    </div>
+                    <div class="summary-box filter-profit">
+                        <h4>මුළු Damage ප්‍රමාණය</h4>
+                        <p id="ret-dash-damages">0</p>
+                    </div>
+                </div>
+                <form id="return-damage-form">
+                    <input type="hidden" id="edit-ret-id">
+                    <div class="form-group-row">
+                        <div class="form-group" style="flex:1;">
+                            <label>දිනය:</label>
+                            <input type="date" id="ret-date" required>
+                        </div>
+                        <div class="form-group" style="flex:1;">
+                            <label>Batch No:</label>
+                            <input type="text" id="ret-batch" placeholder="Batch No">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>කඩය තෝරන්න:</label>
+                        <select id="ret-shop-select" required></select>
+                    </div>
+                    <div class="form-group">
+                        <label>භාණ්ඩය තෝරන්න:</label>
+                        <select id="ret-prod-select" required></select>
+                    </div>
+                    <div class="form-group">
+                        <label>ප්‍රමාණය (S / M / L):</label>
+                        <div class="form-group-row">
+                            <input type="number" id="ret-qty-s" min="0" value="0" placeholder="S">
+                            <input type="number" id="ret-qty-m" min="0" value="0" placeholder="M">
+                            <input type="number" id="ret-qty-l" min="0" value="0" placeholder="L">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>වර්ගය:</label>
+                        <select id="ret-type" required>
+                            <option value="Return">Return</option>
+                            <option value="Damage">Damage</option>
+                        </select>
+                    </div>
+                    <button type="submit" id="ret-submit-btn" class="btn btn-success">දත්ත සටහන් කරන්න</button>
+                    <button type="button" id="ret-cancel-btn" class="btn btn-danger hidden" onclick="resetReturnDamageForm()" style="margin-top:5px;">අවලංගු කරන්න</button>
+                </form>
+
+                <h4 style="margin-top:15px;">📜 Return & Damage ඉතිහාසය</h4>
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr><th>දිනය</th><th>Batch</th><th>කඩය</th><th>භාණ්ඩය</th><th>ප්‍රමාණය (S/M/L)</th><th>වර්ගය</th><th>ක්‍රියා</th></tr>
+                        </thead>
+                        <tbody id="return-damage-table-body"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB: New Orders (2. දුරකථන අංකය සහ Edit පහසුකම සහිතව) -->
+        <div id="tab-orders" class="tab-content">
+            <div class="card">
+                <h3 id="order-form-title">📋 New Orders කළමනාකරණය</h3>
+                <div id="order-near-alerts" style="margin-bottom:15px;"></div>
+
+                <form id="order-form">
+                    <input type="hidden" id="edit-order-id">
+                    <div class="form-group-row">
+                        <div class="form-group" style="flex:1;">
+                            <label>අවශ්‍ය දිනය (Required Date):</label>
+                            <input type="date" id="order-req-date" required>
+                        </div>
+                        <div class="form-group" style="flex:1;">
+                            <label>නම (Customer / Shop):</label>
+                            <input type="text" id="order-customer" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>භාණ්ඩය තෝරන්න:</label>
+                        <select id="order-prod-select" required></select>
+                    </div>
+                    <div class="form-group">
+                        <label>ප්‍රමාණය (S / M / L / Tray):</label>
+                        <div class="form-group-row">
+                            <input type="number" id="order-qty-s" min="0" value="0" placeholder="S">
+                            <input type="number" id="order-qty-m" min="0" value="0" placeholder="M">
+                            <input type="number" id="order-qty-l" min="0" value="0" placeholder="L">
+                            <input type="number" id="order-qty-tray" min="0" value="0" placeholder="Tray">
+                        </div>
+                    </div>
+                    <div class="form-group-row">
+                        <div class="form-group" style="flex:1;">
+                            <label>Location (ලිපිනය / ස්ථානය):</label>
+                            <input type="text" id="order-location" placeholder="ස්ථානය">
+                        </div>
+                        <div class="form-group" style="flex:1;">
+                            <label>දුරකථන අංකය (Phone):</label>
+                            <input type="text" id="order-phone" placeholder="දුරකථන අංකය">
+                        </div>
+                    </div>
+                    <button type="submit" id="order-submit-btn" class="btn btn-success">Order එක සටහන් කරන්න</button>
+                    <button type="button" id="order-cancel-btn" class="btn btn-danger hidden" onclick="resetOrderForm()" style="margin-top:5px;">අවලංගු කරන්න</button>
+                </form>
+
+                <h4 style="margin-top:15px;">📜 Orders ලැයිස්තුව (දිනය අනුව)</h4>
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr><th>අවශ්‍ය දිනය</th><th>නම</th><th>දුරකථන</th><th>භාණ්ඩය</th><th>S / M / L / Tray</th><th>Location</th><th>ක්‍රියා</th></tr>
+                        </thead>
+                        <tbody id="orders-table-body"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 5: Monthly P&L -->
+        <div id="tab-pnl" class="tab-content">
+            <div class="card">
+                <h3>📅 මාසික P&L වාර්තාව</h3>
+                <div class="form-group" style="max-width:300px;">
+                    <label>භාණ්ඩය අනුව තෝරන්න:</label>
+                    <select id="pnl-product-filter-select"></select>
+                </div>
+                <div id="pnl-report-container" class="table-responsive"></div>
+            </div>
+        </div>
+
+        <!-- TAB 6: Settings (1. නව කඩයක් එකතු කිරීමේ Layout එක) -->
+        <div id="tab-settings" class="tab-content">
+            <div class="grid-container">
+                <div class="card">
+                    <h3 id="product-form-title">⚙️ නව භාණ්ඩ එකතු කිරීම</h3>
+                    <form id="add-product-form">
+                        <input type="hidden" id="edit-prod-key">
+                        <div class="form-group">
+                            <label>දිනය:</label>
+                            <input type="date" id="new-prod-date" required>
+                        </div>
+                        <div class="form-group">
+                            <label>නම:</label>
+                            <input type="text" id="new-prod-name" required>
+                        </div>
+                        <div class="form-group">
+                            <label>භාණ්ඩයේ ඡායාරූපය:</label>
+                            <input type="file" id="new-prod-img" accept="image/*">
+                        </div>
+                        <div class="form-group">
+                            <label>සාමාන්‍ය විකිණුම් මිල (රු.):</label>
+                            <div class="form-group-row">
+                                <input type="number" id="new-prod-price-s" step="0.01" placeholder="S මිල" required>
+                                <input type="number" id="new-prod-price-m" step="0.01" placeholder="M මිල" required>
+                                <input type="number" id="new-prod-price-l" step="0.01" placeholder="L මිල" required>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>කල්ඉකුත් වන දින ගණන:</label>
+                            <input type="number" id="new-prod-expiry" min="1" required>
+                        </div>
+                        <button type="submit" id="add-prod-btn" class="btn btn-secondary">භාණ්ඩය එකතු කරන්න</button>
+                        <button type="button" id="cancel-prod-edit" class="btn btn-danger hidden" onclick="resetProductForm()" style="margin-top:5px;">අවලංගු කරන්න</button>
+                    </form>
+                    <div class="table-responsive" style="margin-top:15px;">
+                        <table>
+                            <thead>
+                                <tr><th>Image</th><th>භාණ්ඩය</th><th>මිල (S/M/L)</th><th>Expiry</th><th>ක්‍රියා</th></tr>
+                            </thead>
+                            <tbody id="products-settings-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- 1. Shop Settings Layout Requirement -->
+                <div class="card">
+                    <h3 id="shop-form-title">🏪 නව කඩයක් එකතු කිරීම</h3>
+                    <form id="add-shop-form">
+                        <input type="hidden" id="edit-shop-index" value="-1">
+                        
+                        <!-- දිනය | කඩයේ නම -->
+                        <div class="form-group-row">
+                            <div class="form-group" style="flex:1;">
+                                <label>දිනය (Date):</label>
+                                <input type="date" id="new-shop-date" required>
+                            </div>
+                            <div class="form-group" style="flex:1;">
+                                <label>කඩයේ නම:</label>
+                                <input type="text" id="new-shop-name" required>
+                            </div>
+                        </div>
+
+                        <!-- දුරකථන අංකය | Location -->
+                        <div class="form-group-row">
+                            <div class="form-group" style="flex:1;">
+                                <label>දුරකථන අංකය:</label>
+                                <input type="text" id="new-shop-phone">
+                            </div>
+                            <div class="form-group" style="flex:1;">
+                                <label>Location (ස්ථානය):</label>
+                                <input type="text" id="new-shop-location" placeholder="නගරය / ලිපිනය">
+                            </div>
+                        </div>
+
+                        <!-- WhatsApp අංකය | කඩයේ ඡායාරූපය -->
+                        <div class="form-group-row">
+                            <div class="form-group" style="flex:1;">
+                                <label>WhatsApp අංකය:</label>
+                                <input type="text" id="new-shop-wa">
+                            </div>
+                            <div class="form-group" style="flex:1;">
+                                <label>කඩයේ ඡායාරූපය:</label>
+                                <input type="file" id="new-shop-img" accept="image/*">
+                            </div>
+                        </div>
+                        
+                        <div style="background:#f1f1f1; padding:10px; border-radius:6px; margin-bottom:10px;">
+                            <label style="font-weight:bold;">විශේෂ මිල ගණන් (Special Item Prices):</label>
+                            <button type="button" class="btn btn-secondary" onclick="addShopSpecialPriceRow()" style="margin-top:5px; font-size:0.8rem;">➕ භාණ්ඩයක් එකතු කරන්න</button>
+                            <div id="shop-special-prices-container" style="margin-top:10px;"></div>
+                        </div>
+
+                        <button type="submit" id="add-shop-btn" class="btn btn-secondary">කඩය එකතු කරන්න</button>
+                        <button type="button" id="cancel-shop-edit" class="btn btn-danger hidden" onclick="resetShopForm()" style="margin-top:5px;">අවලංගු කරන්න</button>
+                    </form>
+                    <div class="table-responsive" style="margin-top:15px;">
+                        <table>
+                            <thead>
+                                <tr><th>Image</th><th>කඩය & Location</th><th>Phone / WA</th><th>විශේෂ මිල ගණන්</th><th>ක්‍රියා</th></tr>
+                            </thead>
+                            <tbody id="shop-settings-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3>🔐 Admin Security</h3>
+                    <p style="font-size:0.85rem; color:#666; margin-bottom:10px;">Admin password එක browser එකේ plain text ලෙස save නොකර salted password hash එකක් ලෙස ආරක්ෂා කරයි.</p>
+                    <form id="change-password-form">
+                        <div class="form-group">
+                            <label>දැනට භාවිතා කරන Password:</label>
+                            <input type="password" id="current-admin-password" autocomplete="current-password" required>
+                        </div>
+                        <div class="form-group">
+                            <label>නව Password (අවම අක්ෂර 6):</label>
+                            <input type="password" id="new-admin-password" minlength="6" autocomplete="new-password" required>
+                        </div>
+                        <div class="form-group">
+                            <label>නව Password නැවත:</label>
+                            <input type="password" id="confirm-admin-password" minlength="6" autocomplete="new-password" required>
+                        </div>
+                        <button type="submit" class="btn btn-secondary">🔐 Password වෙනස් කරන්න</button>
+                        <p id="password-change-status" style="font-size:0.85rem; margin-top:8px;"></p>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script src="js/config.js"></script>
+    <script src="js/navigation.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/stock.js"></script>
+    <script src="js/sales.js"></script>
+    <script src="js/expenses.js"></script>
+    <script src="js/credit.js"></script>
+    <script src="js/analytics.js"></script>
+    <script src="js/settings.js"></script>
+    <script src="js/returns_orders.js"></script>
+</body>
+</html>
