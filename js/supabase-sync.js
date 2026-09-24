@@ -34,7 +34,7 @@ const ERP_STORAGE_KEYS = new Set([
     'watalappan_orders'
 ]);
 
-let erpCloudSyncEnabled = false;
+let erpCloudSyncEnabled = true;
 let erpCloudSaveTimer = null;
 
 
