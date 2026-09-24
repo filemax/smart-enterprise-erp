@@ -90,6 +90,48 @@ async function createCredential(username, password, mustChange = false) {
 }
 
 async function verifyCredentials(username, password) {
+
+    const email = username.trim();
+
+    if (!email || !password) {
+        return { ok: false };
+    }
+
+
+    const {
+        data,
+        error
+    } = await supabaseClient.auth.signInWithPassword({
+        email: email,
+        password: password
+    });
+
+
+    if (error || !data.user) {
+
+        console.error(
+            'Supabase login error:',
+            error
+        );
+
+        return {
+            ok: false
+        };
+    }
+
+
+    // Download latest ERP data
+    await loadERPStateFromSupabase();
+
+
+    return {
+        ok: true,
+        credential: {
+            mustChange: false
+        },
+        user: data.user
+    };
+}
     const cleanUser = username.trim();
     if (!cleanUser || !password) return { ok: false };
 
@@ -158,59 +200,175 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    document.getElementById('logout-btn').addEventListener('click', () => {
-        appContainer.classList.add('hidden');
-        loginContainer.classList.remove('hidden');
-        passwordInput.value = "";
-    });
+    document
+    .getElementById('logout-btn')
+    .addEventListener(
+        'click',
+        async () => {
 
-    const changePasswordForm = document.getElementById('change-password-form');
-    if (changePasswordForm) {
-        changePasswordForm.addEventListener('submit', async (e) => {
+            await supabaseClient.auth.signOut();
+
+            erpCloudSyncEnabled = false;
+
+            appContainer.classList.add(
+                'hidden'
+            );
+
+            loginContainer.classList.remove(
+                'hidden'
+            );
+
+            passwordInput.value = '';
+        }
+    );
+
+    const changePasswordForm =
+    document.getElementById(
+        'change-password-form'
+    );
+
+
+if (changePasswordForm) {
+
+    changePasswordForm.addEventListener(
+        'submit',
+        async (e) => {
+
             e.preventDefault();
-            const currentPassword = document.getElementById('current-admin-password').value;
-            const newPassword = document.getElementById('new-admin-password').value;
-            const confirmPassword = document.getElementById('confirm-admin-password').value;
-            const status = document.getElementById('password-change-status');
-            const stored = readStoredCredential();
 
-            if (!stored) {
-                status.textContent = '❌ Login credential එක හමු නොවීය. Logout වී නැවත Login වන්න.';
-                status.style.color = 'red';
-                return;
-            }
+
+            const currentPassword =
+                document.getElementById(
+                    'current-admin-password'
+                ).value;
+
+
+            const newPassword =
+                document.getElementById(
+                    'new-admin-password'
+                ).value;
+
+
+            const confirmPassword =
+                document.getElementById(
+                    'confirm-admin-password'
+                ).value;
+
+
+            const status =
+                document.getElementById(
+                    'password-change-status'
+                );
+
+
             if (newPassword.length < 6) {
-                status.textContent = '❌ නව මුරපදය අවම වශයෙන් අක්ෂර 6ක් විය යුතුය.';
+
+                status.textContent =
+                    '❌ නව මුරපදය අවම වශයෙන් අක්ෂර 6ක් විය යුතුය.';
+
                 status.style.color = 'red';
+
                 return;
             }
+
+
             if (newPassword !== confirmPassword) {
-                status.textContent = '❌ නව මුරපද දෙක එකිනෙකට ගැළපෙන්නේ නැහැ.';
+
+                status.textContent =
+                    '❌ නව මුරපද දෙක එකිනෙකට ගැළපෙන්නේ නැහැ.';
+
                 status.style.color = 'red';
+
                 return;
             }
+
 
             try {
-                const currentHash = await derivePasswordHash(currentPassword, stored.salt, stored.iterations);
-                if (!secureEqualBase64(currentHash, stored.hash)) {
-                    status.textContent = '❌ දැනට භාවිතා කරන මුරපදය වැරදියි.';
-                    status.style.color = 'red';
+
+                const {
+                    data: { user }
+                } =
+                    await supabaseClient
+                        .auth
+                        .getUser();
+
+
+                if (!user || !user.email) {
+
+                    throw new Error(
+                        'No logged in user'
+                    );
+                }
+
+
+                // Verify current password
+
+                const {
+                    error: loginError
+                } =
+                    await supabaseClient
+                        .auth
+                        .signInWithPassword({
+                            email: user.email,
+                            password:
+                                currentPassword
+                        });
+
+
+                if (loginError) {
+
+                    status.textContent =
+                        '❌ දැනට භාවිතා කරන මුරපදය වැරදියි.';
+
+                    status.style.color =
+                        'red';
+
                     return;
                 }
 
-                const updated = await createCredential(stored.username, newPassword, false);
-                localStorage.setItem(AUTH_CREDENTIAL_KEY, JSON.stringify(updated));
-                changePasswordForm.reset();
-                status.textContent = '✅ Admin password එක සාර්ථකව වෙනස් කළා.';
-                status.style.color = 'green';
-            } catch (err) {
-                console.error(err);
-                status.textContent = '❌ Password එක වෙනස් කිරීමට නොහැකි විය.';
-                status.style.color = 'red';
-            }
-        });
-    }
 
+                // Change password
+
+                const {
+                    error: updateError
+                } =
+                    await supabaseClient
+                        .auth
+                        .updateUser({
+                            password:
+                                newPassword
+                        });
+
+
+                if (updateError) {
+
+                    throw updateError;
+                }
+
+
+                changePasswordForm.reset();
+
+
+                status.textContent =
+                    '✅ Admin password එක සාර්ථකව වෙනස් කළා.';
+
+                status.style.color =
+                    'green';
+
+
+            } catch (error) {
+
+                console.error(error);
+
+                status.textContent =
+                    '❌ Password එක වෙනස් කිරීමට නොහැකි විය.';
+
+                status.style.color =
+                    'red';
+            }
+        }
+    );
+        }
     setInterval(updateClock, 1000);
     updateClock();
 });
