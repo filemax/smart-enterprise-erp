@@ -97,32 +97,37 @@ async function verifyCredentials(username, password) {
         return { ok: false };
     }
 
+    const { data, error } =
+        await supabaseClient.auth.signInWithPassword({
+            email: email,
+            password: password
+        });
 
-    const {
-        data,
-        error
-    } = await supabaseClient.auth.signInWithPassword({
-        email: email,
-        password: password
-    });
+    if (error) {
+        console.error("Supabase login error:", error);
 
-
-    if (error || !data.user) {
-
-        console.error(
-            'Supabase login error:',
-            error
+        alert(
+            "Supabase Login Error:\n" +
+            error.message
         );
 
-        return {
-            ok: false
-        };
+        return { ok: false };
     }
 
+    if (!data.user) {
+        return { ok: false };
+    }
 
-    // Download latest ERP data
-    await loadERPStateFromSupabase();
+    try {
+        await loadERPStateFromSupabase();
+    } catch (syncError) {
+        console.error(syncError);
 
+        alert(
+            "Login success. But cloud data sync error:\n" +
+            syncError.message
+        );
+    }
 
     return {
         ok: true,
@@ -131,24 +136,6 @@ async function verifyCredentials(username, password) {
         },
         user: data.user
     };
-}
-    const cleanUser = username.trim();
-    if (!cleanUser || !password) return { ok: false };
-
-    const stored = readStoredCredential();
-    if (stored) {
-        if (stored.username.toLowerCase() !== cleanUser.toLowerCase()) return { ok: false };
-        const hash = await derivePasswordHash(password, stored.salt, stored.iterations);
-        return { ok: secureEqualBase64(hash, stored.hash), credential: stored };
-    }
-
-    // One-time migration path from the previous release.
-    const legacyHash = await derivePasswordHash(password, LEGACY_AUTH.salt, LEGACY_AUTH.iterations);
-    if (!secureEqualBase64(legacyHash, LEGACY_AUTH.hash)) return { ok: false };
-
-    const migrated = await createCredential(cleanUser, password, true);
-    localStorage.setItem(AUTH_CREDENTIAL_KEY, JSON.stringify(migrated));
-    return { ok: true, credential: migrated, migrated: true };
 }
 
 document.addEventListener("DOMContentLoaded", () => {
