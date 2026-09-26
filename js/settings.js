@@ -1,6 +1,118 @@
 // --- PRODUCT SETTINGS ---
+async function loadProductsFromSupabase() {
+
+    const { data, error } = await supabaseClient
+            .from('product_with_units')
+                    .select('*');
+
+                        if(error){
+                                console.log(error);
+                                        return;
+                                            }
+
+                                                productsMap = {};
+
+                                                    data.forEach(product => {
+
+                                                            let prices = {};
+
+                                                                    product.units.forEach(unit => {
+                                                                                prices[unit.unit] = unit.price;
+                                                                                        });
+
+                                                                                                productsMap[product.name] = {
+                                                                                                            prices: prices,
+                                                                                                                        expiry: "",
+                                                                                                                                    date: "",
+                                                                                                                                                img: product.image || ""
+                                                                                                                                                        };
+
+                                                                                                                                                            });
+
+                                                                                                                                                                localStorage.setItem(
+                                                                                                                                                                        'watalappan_products_map',
+                                                                                                                                                                                JSON.stringify(productsMap)
+                                                                                                                                                                                    );
+
+                                                                                                                                                                                        renderProductsSettings();
+                                                                                                                                                                                        }ව්
 document.getElementById('add-product-form').addEventListener('submit', (e) => {
+   
+
+        
+               
+                          
+
+                            
+                                        
+                                            
+                                                    
+
+                                                       
+
+                                                           
+
+                                                                   
+
+                                                                           
+                                                                                       
+                                                                                            
+
+                                                                                                    
+                                                                                                                   
+                                                                                                                            
+                                                                                                                                       
+                                                                                                                                                    
+                                                                                                                                                           
+
+                                                                                                                                                                
+
+                                                                                                                                                                      
+                                                                                                                                                                             
+                                                                                                                                                                                     
+                                                                                                                                                                                           
+
+                                                                                                                                                                                             
+                                                                                                               
+
     e.preventDefault();
+    
+           
+                
+                       
+
+                            
+                                      
+                                             
+                                             
+
+                                                   
+
+                                                           
+
+                                                                 
+
+                                                                          
+                                                                                    
+                                                                                          
+
+                                                                                                      
+                                                                                                                 
+                                                                                                                             
+                                                                                                                                        
+                                                                                                                                                      
+                                                                                                                                                           
+
+                                                                                                                                                              
+
+                                                                                                                                                                
+                                                                                                                                                                               
+                                                                                                                                                                            
+                                                                                                                                                                                          
+
+                                                                                                                                                                                               
+                                                                                                                                                                               
+   
     const date = document.getElementById('new-prod-date').value;
     const name = document.getElementById('new-prod-name').value.trim();
     const priceS = parseFloat(document.getElementById('new-prod-price-s').value) || 0;
@@ -322,3 +434,4 @@ document.addEventListener("DOMContentLoaded", () => {
     renderShops();
     renderProductsSettings();
 });
+loadProductsFromSupabase();
