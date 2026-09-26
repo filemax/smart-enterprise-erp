@@ -385,19 +385,19 @@ Storage.prototype.setItem =
 
         return result;
     };
-async function testProductsFromDatabase(){
 
-    const { data, error } = await supabaseClient
-    .from('product_with_units')
-    .select('*');
 
-    if(error){
-    console.log(error);
-    return;
-    }
 
-    alert(JSON.stringify(data));
 
-    }6
-alert("supabase file loaded");
-    testProductsFromDatabase();
+
+
+
+
+
+
+
+
+
+
+
+
