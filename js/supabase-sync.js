@@ -385,7 +385,24 @@ Storage.prototype.setItem =
 
         return result;
     };
+async function getProductsFromDB() {
 
+    const { data, error } = await supabase
+        .from('products')
+        .select(`
+            *,
+            product_units(*),
+            product_prices(*)
+        `)
+        .order('product_name');
+
+    if(error){
+        console.error(error);
+        return [];
+    }
+
+    return data;
+}
 
 
 
