@@ -2,68 +2,113 @@
 // SMART ENTERPRISE ERP - SUPABASE CLOUD SYNC
 // ======================================================
 
-const SUPABASE_URL = 'https://mptolqigbsayxwtlgrif.supabase.co';
+
+// ======================================================
+// SUPABASE CONFIG
+// ======================================================
+
+const SUPABASE_URL =
+    'https://mptolqigbsayxwtlgrif.supabase.co';
+
 
 const SUPABASE_PUBLISHABLE_KEY =
     'sb_publishable__DkoX7rIQrG5JAwmcbsW_Q_gaPWq3ol';
 
-const supabaseClient = window.supabase.createClient(
-    SUPABASE_URL,
-    SUPABASE_PUBLISHABLE_KEY,
-    {
-        auth: {
-            persistSession: true,
-            autoRefreshToken: true
+
+
+const supabaseClient =
+    window.supabase.createClient(
+        SUPABASE_URL,
+        SUPABASE_PUBLISHABLE_KEY,
+        {
+            auth:{
+                persistSession:true,
+                autoRefreshToken:true
+            }
         }
-    }
-);
+    );
 
 
-// ------------------------------------------------------
-// ERP localStorage keys that must sync to Supabase
-// ------------------------------------------------------
+
+// ======================================================
+// LOCAL STORAGE KEYS
+// ======================================================
 
 const ERP_STORAGE_KEYS = new Set([
+
     'watalappan_shop_directory',
+
     'watalappan_products_map',
+
     'watalappan_sales',
+
     'watalappan_expenses',
+
     'watalappan_stock_history',
+
     'watalappan_credit_payments',
+
     'watalappan_return_damage',
+
     'watalappan_orders'
+
 ]);
 
+
+
 let erpCloudSyncEnabled = true;
+
 let erpCloudSaveTimer = null;
 
 
-// ------------------------------------------------------
-// Read JSON safely
-// ------------------------------------------------------
 
-function readERPStorage(key, fallback) {
-    try {
-        const value = localStorage.getItem(key);
+// ======================================================
+// SAFE JSON READ
+// ======================================================
 
-        if (!value) {
+
+function readERPStorage(key,fallback){
+
+    try{
+
+        const value =
+            localStorage.getItem(key);
+
+
+        if(!value){
+
             return fallback;
+
         }
+
 
         return JSON.parse(value);
 
-    } catch (error) {
-        console.error('Storage read error:', key, error);
+
+    }catch(error){
+
+        console.error(
+            "Storage error:",
+            error
+        );
+
+
         return fallback;
+
     }
+
 }
 
 
-// ------------------------------------------------------
-// Build one complete ERP cloud object
-// ------------------------------------------------------
 
-function collectERPState() {
+
+// ======================================================
+// COLLECT ERP STATE
+// ======================================================
+
+
+function collectERPState(){
+
 
     return {
 
@@ -73,11 +118,13 @@ function collectERPState() {
                 []
             ),
 
+
         productsMap:
             readERPStorage(
                 'watalappan_products_map',
                 {}
             ),
+
 
         salesData:
             readERPStorage(
@@ -85,11 +132,13 @@ function collectERPState() {
                 []
             ),
 
+
         expenses:
             readERPStorage(
                 'watalappan_expenses',
                 []
             ),
+
 
         stockHistory:
             readERPStorage(
@@ -97,17 +146,20 @@ function collectERPState() {
                 []
             ),
 
+
         creditPayments:
             readERPStorage(
                 'watalappan_credit_payments',
                 []
             ),
 
+
         returns:
             readERPStorage(
                 'watalappan_return_damage',
                 []
             ),
+
 
         orders:
             readERPStorage(
@@ -116,305 +168,554 @@ function collectERPState() {
             )
 
     };
+
 }
 
 
-// ------------------------------------------------------
-// Apply downloaded cloud data to ERP
-// ------------------------------------------------------
 
-function applyERPState(state) {
+
+// ======================================================
+// APPLY CLOUD DATA
+// ======================================================
+
+
+function applyERPState(state){
+
 
     erpCloudSyncEnabled = false;
 
-    const shopData =
-        state.shopDirectory || [];
-
-    const productData =
-        state.productsMap || {};
-
-    const sales =
-        state.salesData || [];
-
-    const expenseData =
-        state.expenses || [];
-
-    const stockData =
-        state.stockHistory || [];
-
-    const creditData =
-        state.creditPayments || [];
-
-    const returnsData =
-        state.returns || [];
-
-    const ordersData =
-        state.orders || [];
 
 
     localStorage.setItem(
         'watalappan_shop_directory',
-        JSON.stringify(shopData)
+        JSON.stringify(
+            state.shopDirectory || []
+        )
     );
+
 
     localStorage.setItem(
         'watalappan_products_map',
-        JSON.stringify(productData)
+        JSON.stringify(
+            state.productsMap || {}
+        )
     );
+
 
     localStorage.setItem(
         'watalappan_sales',
-        JSON.stringify(sales)
+        JSON.stringify(
+            state.salesData || []
+        )
     );
+
 
     localStorage.setItem(
         'watalappan_expenses',
-        JSON.stringify(expenseData)
+        JSON.stringify(
+            state.expenses || []
+        )
     );
+
 
     localStorage.setItem(
         'watalappan_stock_history',
-        JSON.stringify(stockData)
+        JSON.stringify(
+            state.stockHistory || []
+        )
     );
+
 
     localStorage.setItem(
         'watalappan_credit_payments',
-        JSON.stringify(creditData)
+        JSON.stringify(
+            state.creditPayments || []
+        )
     );
+
 
     localStorage.setItem(
         'watalappan_return_damage',
-        JSON.stringify(returnsData)
+        JSON.stringify(
+            state.returns || []
+        )
     );
+
 
     localStorage.setItem(
         'watalappan_orders',
-        JSON.stringify(ordersData)
+        JSON.stringify(
+            state.orders || []
+        )
     );
 
 
-    // Update current in-memory ERP variables
 
-    shopDirectory = shopData;
-    productsMap = productData;
-    salesData = sales;
-    expenses = expenseData;
-    stockHistory = stockData;
-    creditPayments = creditData;
+    if(typeof shopDirectory !== 'undefined')
+        shopDirectory =
+            state.shopDirectory || [];
 
 
-    if (typeof returnDamageList !== 'undefined') {
-        returnDamageList = returnsData;
-    }
 
-    if (typeof ordersList !== 'undefined') {
-        ordersList = ordersData;
-    }
+    if(typeof productsMap !== 'undefined')
+        productsMap =
+            state.productsMap || {};
+
+
+
+    if(typeof salesData !== 'undefined')
+        salesData =
+            state.salesData || {};
+
+
+
+    if(typeof expenses !== 'undefined')
+        expenses =
+            state.expenses || [];
+
+
+
+    if(typeof stockHistory !== 'undefined')
+        stockHistory =
+            state.stockHistory || [];
+
+
+
+    if(typeof creditPayments !== 'undefined')
+        creditPayments =
+            state.creditPayments || [];
+
+
+
 }
 
 
-// ------------------------------------------------------
-// Download ERP state after login
-// ------------------------------------------------------
 
-async function loadERPStateFromSupabase() {
+
+// ======================================================
+// LOAD ERP STATE
+// ======================================================
+
+
+async function loadERPStateFromSupabase(){
+
 
     const {
-        data: { user },
-        error: userError
-    } = await supabaseClient.auth.getUser();
+
+        data:{
+            user
+
+        },
+
+        error:userError
+
+    } =
+    await supabaseClient.auth.getUser();
 
 
-    if (userError) {
+
+    if(userError)
         throw userError;
-    }
 
-    if (!user) {
-        throw new Error('User is not logged in.');
-    }
+
+
+    if(!user)
+        throw new Error(
+            "User not logged in"
+        );
+
 
 
     const {
+
         data,
+
         error
-    } = await supabaseClient
-        .from('erp_state')
-        .select('data')
-        .eq('user_id', user.id)
-        .maybeSingle();
+
+    } =
+    await supabaseClient
+
+    .from('erp_state')
+
+    .select('data')
+
+    .eq(
+        'user_id',
+        user.id
+    )
+
+    .maybeSingle();
 
 
-    if (error) {
+
+    if(error)
         throw error;
+
+
+
+
+    if(data && data.data){
+
+
+        applyERPState(
+            data.data
+        );
+
+
     }
 
-
-    // Existing cloud database
-    if (data && data.data) {
-
-        applyERPState(data.data);
-
-    } else {
-
-        // First login:
-        // Upload current local ERP state
-
-        const state = collectERPState();
-
-        const {
-            error: insertError
-        } = await supabaseClient
-            .from('erp_state')
-            .insert({
-                user_id: user.id,
-                data: state,
-                updated_at: new Date().toISOString()
-            });
+    else{
 
 
-        if (insertError) {
-            throw insertError;
-        }
+        const state =
+            collectERPState();
+
+
+
+        await supabaseClient
+
+        .from('erp_state')
+
+        .insert({
+
+            user_id:user.id,
+
+            data:state,
+
+            updated_at:
+                new Date()
+                .toISOString()
+
+        });
+
+
     }
+
 
 
     erpCloudSyncEnabled = true;
+
+
 }
 
 
-// ------------------------------------------------------
-// Upload ERP state
-// ------------------------------------------------------
 
-async function saveERPStateToSupabase() {
 
-    if (!erpCloudSyncEnabled) {
+
+// ======================================================
+// SAVE ERP STATE
+// ======================================================
+
+
+async function saveERPStateToSupabase(){
+
+
+    if(!erpCloudSyncEnabled)
         return;
-    }
+
 
 
     const {
-        data: { session }
-    } = await supabaseClient.auth.getSession();
+
+        data:{
+            session
+
+        }
+
+    } =
+    await supabaseClient.auth.getSession();
 
 
-    if (!session || !session.user) {
+
+    if(!session)
         return;
-    }
 
 
-    const state = collectERPState();
+
+
+    const state =
+        collectERPState();
+
 
 
     const {
+
         error
-    } = await supabaseClient
-        .from('erp_state')
-        .upsert(
-            {
-                user_id: session.user.id,
-                data: state,
-                updated_at: new Date().toISOString()
-            },
-            {
-                onConflict: 'user_id'
-            }
-        );
+
+    } =
+    await supabaseClient
+
+    .from('erp_state')
+
+    .upsert({
+
+        user_id:
+            session.user.id,
 
 
-    if (error) {
+        data:state,
+
+
+        updated_at:
+            new Date()
+            .toISOString()
+
+
+    },
+
+    {
+
+        onConflict:'user_id'
+
+    });
+
+
+
+    if(error)
 
         console.error(
-            'Supabase ERP sync error:',
+            "Cloud save error",
             error
         );
 
-    } else {
+    else
 
         console.log(
-            'ERP cloud sync completed.'
+            "ERP Sync completed"
         );
-    }
+
 }
 
 
-// ------------------------------------------------------
-// Avoid sending a database request for every tiny change
-// ------------------------------------------------------
 
-function scheduleERPCloudSave() {
 
-    clearTimeout(erpCloudSaveTimer);
 
-    erpCloudSaveTimer = setTimeout(
-        saveERPStateToSupabase,
-        700
+// ======================================================
+// AUTO SAVE TIMER
+// ======================================================
+
+
+function scheduleERPCloudSave(){
+
+
+    clearTimeout(
+        erpCloudSaveTimer
     );
+
+
+    erpCloudSaveTimer =
+        setTimeout(
+
+            saveERPStateToSupabase,
+
+            700
+
+        );
+
 }
 
 
-// ------------------------------------------------------
-// Automatically detect ERP localStorage changes
-// ------------------------------------------------------
+
+
+// ======================================================
+// WATCH LOCAL STORAGE
+// ======================================================
+
 
 const originalStorageSetItem =
     Storage.prototype.setItem;
 
 
+
 Storage.prototype.setItem =
-    function(key, value) {
-
-        const result =
-            originalStorageSetItem.call(
-                this,
-                key,
-                value
-            );
+function(key,value){
 
 
-        if (
-            this === window.localStorage &&
-            ERP_STORAGE_KEYS.has(key) &&
-            erpCloudSyncEnabled
-        ) {
-
-            scheduleERPCloudSave();
-
-        }
+    const result =
+        originalStorageSetItem.call(
+            this,
+            key,
+            value
+        );
 
 
-        return result;
-    };
-async function getProductsFromDB() {
 
-    const { data, error } = await supabase
-        .from('products')
-        .select(`
-            *,
-            product_units(*),
-            product_prices(*)
-        `)
-        .order('product_name');
+    if(
 
-    if(error){
-        console.error(error);
-        return [];
+        this === window.localStorage
+
+        &&
+
+        ERP_STORAGE_KEYS.has(key)
+
+        &&
+
+        erpCloudSyncEnabled
+
+    ){
+
+        scheduleERPCloudSave();
+
     }
 
-    return data;
+
+
+    return result;
+
+};
+
+
+
+
+
+// ======================================================
+// DATABASE PRODUCT FUNCTIONS
+// ======================================================
+
+
+
+async function getProductsFromDB(){
+
+
+    const {
+
+        data,
+
+        error
+
+    } =
+
+    await supabaseClient
+
+    .from('products')
+
+    .select(`
+
+        *,
+
+        product_units(*),
+
+        product_prices(*),
+
+        product_batches(*)
+
+    `)
+
+    .order(
+        'product_name'
+    );
+
+
+
+    if(error){
+
+        console.error(
+            "Products load error:",
+            error
+        );
+
+
+        return [];
+
+    }
+
+
+
+    return data || [];
+
 }
 
 
 
 
 
+// ======================================================
+// STOCK TRANSACTION LOAD
+// ======================================================
+
+
+async function getStockTransactionsFromDB(){
+
+
+    const {
+
+        data,
+
+        error
+
+    } =
+
+    await supabaseClient
+
+    .from('stock_transactions')
+
+    .select('*')
+
+    .order(
+        'created_at',
+        {
+            ascending:false
+        }
+    );
+
+
+
+    if(error){
+
+        console.error(error);
+
+        return [];
+
+    }
+
+
+    return data || [];
+
+}
 
 
 
 
 
+// ======================================================
+// ADD PRODUCT TO DATABASE
+// ======================================================
+
+
+async function saveProductToDB(product){
+
+
+    const {
+
+        data,
+
+        error
+
+    } =
+
+    await supabaseClient
+
+    .from('products')
+
+    .insert(product)
+
+    .select()
+
+    .single();
 
 
 
+    if(error){
+
+        console.error(
+            error
+        );
+
+        return null;
+
+    }
 
 
+    return data;
+
+}
