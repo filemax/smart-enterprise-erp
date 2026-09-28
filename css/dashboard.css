@@ -1,0 +1,208 @@
+.tabs-nav {
+    position: sticky;
+    top: 8px;
+    z-index: 100;
+    display: flex;
+    gap: 6px;
+    margin-bottom: 18px;
+    padding: 7px;
+    overflow-x: auto;
+    border: 1px solid var(--border-color);
+    border-radius: 13px;
+    background: rgba(255,255,255,.92);
+    box-shadow: var(--shadow-sm);
+    backdrop-filter: blur(12px);
+    white-space: nowrap;
+    scrollbar-width: none;
+}
+
+.tabs-nav::-webkit-scrollbar {
+    display: none;
+}
+
+body.dark-mode .tabs-nav {
+    background: rgba(17,27,37,.93);
+}
+
+.tab-btn {
+    position: relative;
+    flex: 0 0 auto;
+    min-height: 38px;
+    padding: 8px 13px;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    background: transparent;
+    color: #536576;
+    cursor: pointer;
+    font-size: .78rem;
+    font-weight: 750;
+    transition: background var(--transition), color var(--transition), border-color var(--transition), transform var(--transition);
+}
+
+.tab-btn:hover {
+    background: var(--primary-soft);
+    color: var(--primary-color);
+}
+
+.tab-btn.active {
+    background: var(--primary-color);
+    color: #fff;
+    box-shadow: 0 4px 10px rgba(18,48,74,.18);
+}
+
+body.dark-mode .tab-btn {
+    color: #abc0d0;
+}
+
+body.dark-mode .tab-btn.active {
+    background: #2d6d94;
+    color: #fff;
+}
+
+.tab-content {
+    display: none;
+}
+
+.tab-content.active-content {
+    display: block;
+}
+
+.filter-dashboard {
+    border-left: 1px solid var(--border-color) !important;
+}
+
+.filter-controls-four {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+    margin-bottom: 16px;
+    padding: 13px;
+    border: 1px solid var(--border-color);
+    border-radius: 11px;
+    background: var(--surface-soft);
+}
+
+.filter-controls-four .form-group {
+    margin-bottom: 0;
+}
+
+.summary-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.summary-box {
+    position: relative;
+    min-height: 112px;
+    padding: 16px;
+    overflow: hidden;
+    border: 1px solid rgba(255,255,255,.15);
+    border-radius: 13px;
+    color: #fff;
+    box-shadow: 0 8px 18px rgba(15,35,55,.08);
+}
+
+.summary-box::after {
+    content: "";
+    position: absolute;
+    right: -25px;
+    bottom: -38px;
+    width: 110px;
+    height: 110px;
+    border: 18px solid rgba(255,255,255,.07);
+    border-radius: 50%;
+}
+
+.filter-sales {
+    background: linear-gradient(135deg, #257aa4, #195a7b) !important;
+}
+
+.filter-income {
+    background: linear-gradient(135deg, #248866, #176148) !important;
+}
+
+.filter-return {
+    background: linear-gradient(135deg, #d49331, #ad6f17) !important;
+}
+
+.filter-outstanding {
+    background: linear-gradient(135deg, #6557a7, #473985) !important;
+}
+
+.filter-profit {
+    background: linear-gradient(135deg, #a94750, #7e3038) !important;
+}
+
+.summary-box h4 {
+    position: relative;
+    z-index: 1;
+    margin-bottom: 8px;
+    color: rgba(255,255,255,.83);
+    font-size: .72rem;
+    font-weight: 700;
+    letter-spacing: .015em;
+}
+
+.summary-box p {
+    position: relative;
+    z-index: 1;
+    font-size: clamp(1.05rem, 2vw, 1.35rem);
+    font-weight: 850;
+    letter-spacing: -0.02em;
+}
+
+.summary-box small {
+    position: relative;
+    z-index: 1;
+    display: block;
+    margin-top: 4px;
+    color: rgba(255,255,255,.8);
+    font-size: .68rem;
+}
+
+/* Make inline status / alert cards look consistent without changing content */
+#analytics-upcoming-orders > div {
+    margin-top: 8px !important;
+    padding: 10px 12px !important;
+    border: 1px solid #d7e5ef !important;
+    border-left: 4px solid var(--info-color) !important;
+    border-radius: 9px !important;
+    background: #f7fbfd !important;
+    color: #344454;
+}
+
+body.dark-mode #analytics-upcoming-orders > div {
+    border-color: #294153 !important;
+    background: #10202c !important;
+    color: #d4e0e9;
+}
+
+@media (max-width: 900px) {
+    .summary-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 768px) {
+    .tabs-nav {
+        top: 4px;
+        margin-left: -2px;
+        margin-right: -2px;
+        border-radius: 11px;
+    }
+
+    .filter-controls-four {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 480px) {
+    .summary-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .summary-box[style*="grid-column"] {
+        grid-column: auto !important;
+    }
+}
