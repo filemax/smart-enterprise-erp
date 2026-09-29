@@ -1,48 +1,79 @@
 // Smart Enterprise ERP - Supabase Authentication
+// Uses public.user_profiles for role + shop information.
 
 const AUTH_SESSION_KEY = 'erp_user_session';
+const ERP_USER_KEY = 'erp_user';
 
 async function checkSupabaseSession() {
     const client = initSupabase();
     if (!client) return null;
 
-    const { data } = await client.auth.getSession();
-    return data.session;
+    const { data, error } = await client.auth.getSession();
+    if (error) {
+        console.warn('Session check failed:', error.message);
+        return null;
+    }
+    return data.session || null;
 }
 
 async function loadUserProfile(userId) {
     const client = initSupabase();
-    if (!client) return null;
+    if (!client || !userId) return null;
 
     const { data, error } = await client
-        .from('profiles')
+        .from('user_profiles')
         .select('*')
         .eq('id', userId)
-        .single();
+        .maybeSingle();
 
     if (error) {
-        console.warn('Profile not found:', error.message);
+        console.warn('User profile load failed:', error.message);
         return null;
     }
 
-    return data;
+    return data || null;
+}
+
+function saveCurrentERPUser(session, profile) {
+    const user = session?.user || null;
+    if (!user) return;
+
+    const erpUser = {
+        id: user.id,
+        email: user.email || '',
+        role: profile?.role || 'staff',
+        shop_id: profile?.shop_id ?? null
+    };
+
+    localStorage.setItem(AUTH_SESSION_KEY, JSON.stringify(user));
+    localStorage.setItem(ERP_USER_KEY, JSON.stringify(erpUser));
+
+    window.currentUser = user;
+    window.currentProfile = profile || {
+        id: user.id,
+        role: 'staff',
+        shop_id: null
+    };
 }
 
 async function openERP(session) {
-    localStorage.setItem(AUTH_SESSION_KEY, JSON.stringify(session.user));
+    if (!session?.user) return false;
 
     const loginContainer = document.getElementById('login-container');
     const appContainer = document.getElementById('app-container');
 
-    loginContainer.classList.add('hidden');
-    appContainer.classList.remove('hidden');
+    const profile = await loadUserProfile(session.user.id);
 
-    window.currentUser = session.user;
-    window.currentProfile = await loadUserProfile(session.user.id);
+    saveCurrentERPUser(session, profile);
+
+    if (loginContainer) loginContainer.classList.add('hidden');
+    if (appContainer) appContainer.classList.remove('hidden');
 
     if (typeof initApp === 'function') {
         initApp();
     }
+
+    return true;
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -51,55 +82,75 @@ document.addEventListener('DOMContentLoaded', async () => {
     const usernameInput = document.getElementById('username');
     const passwordInput = document.getElementById('password');
     const rememberMe = document.getElementById('remember-me');
-
     const loginContainer = document.getElementById('login-container');
     const appContainer = document.getElementById('app-container');
 
-    loginContainer.classList.remove('hidden');
-    appContainer.classList.add('hidden');
+    if (loginContainer) loginContainer.classList.remove('hidden');
+    if (appContainer) appContainer.classList.add('hidden');
+
+    const rememberedUser = localStorage.getItem('erp_remember_user');
+    if (rememberedUser && usernameInput) {
+        usernameInput.value = rememberedUser;
+    }
 
     const existing = await checkSupabaseSession();
     if (existing) {
         await openERP(existing);
     }
 
-    loginForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        loginError.textContent = '';
+    if (loginForm) {
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
 
-        try {
-            const { data, error } = await supabaseSignIn(
-                usernameInput.value.trim(),
-                passwordInput.value
-            );
+            if (loginError) loginError.textContent = '';
 
-            if (error || !data.session) {
-                loginError.textContent = '❌ Username හෝ Password වැරදියි';
-                passwordInput.value = '';
-                return;
+            try {
+                const email = usernameInput ? usernameInput.value.trim() : '';
+                const password = passwordInput ? passwordInput.value : '';
+
+                const { data, error } = await supabaseSignIn(email, password);
+
+                if (error || !data?.session) {
+                    if (loginError) {
+                        loginError.textContent = '❌ Email හෝ Password වැරදියි';
+                    }
+                    if (passwordInput) passwordInput.value = '';
+                    return;
+                }
+
+                if (rememberMe?.checked) {
+                    localStorage.setItem('erp_remember_user', email);
+                } else {
+                    localStorage.removeItem('erp_remember_user');
+                }
+
+                await openERP(data.session);
+
+            } catch (err) {
+                console.error(err);
+                if (loginError) {
+                    loginError.textContent = '❌ Login error. Supabase connection check කරන්න.';
+                }
             }
-
-            if (rememberMe.checked) {
-                localStorage.setItem('erp_remember_user', usernameInput.value.trim());
-            }
-
-            await openERP(data.session);
-
-        } catch (err) {
-            console.error(err);
-            loginError.textContent = '❌ Login error. Supabase connection check කරන්න.';
-        }
-    });
+        });
+    }
 
     const logout = document.getElementById('logout-btn');
     if (logout) {
         logout.addEventListener('click', async () => {
-            await supabaseSignOut();
-            localStorage.removeItem(AUTH_SESSION_KEY);
+            try {
+                await supabaseSignOut();
+            } finally {
+                localStorage.removeItem(AUTH_SESSION_KEY);
+                localStorage.removeItem(ERP_USER_KEY);
 
-            appContainer.classList.add('hidden');
-            loginContainer.classList.remove('hidden');
-            passwordInput.value = '';
+                window.currentUser = null;
+                window.currentProfile = null;
+
+                if (appContainer) appContainer.classList.add('hidden');
+                if (loginContainer) loginContainer.classList.remove('hidden');
+                if (passwordInput) passwordInput.value = '';
+            }
         });
     }
 });
